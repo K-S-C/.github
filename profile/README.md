@@ -39,8 +39,11 @@ We have three distinct roles based on your involvement level:
 ## 🌟 Our Supporters
 
 <!-- SUPPORTERS_LIST_START -->
-*A huge thank you to all our amazing supporters! This list updates automatically.*  
-*(If you are a Supporter, you will appear here shortly after auto-approval.)*
+
+**Current Supporters:**
+
+- [@NodeX-AR](https://github.com/NodeX-AR)
+
 <!-- SUPPORTERS_LIST_END -->
 
 > *The list above is auto-updated daily via GitHub Actions.*
