@@ -34,10 +34,11 @@ jobs:
           echo "USERNAME = '${{ env.USERNAME }}'"
           echo "ROLE = '${{ env.ROLE }}'"
 
+      # 🔧 FIXED: Use PAT for validation (needs 'user' scope)
       - name: Validate GitHub username
         id: validate
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
         run: |
           if gh api users/${{ env.USERNAME }} --silent 2>/dev/null; then
             echo "VALID=true" >> $GITHUB_ENV
