@@ -3,20 +3,21 @@ name: Test Bot Comment on All Open Issues
 on:
   workflow_dispatch:
 
+permissions:
+  issues: write   # explicit permission (now should work)
+
 jobs:
   comment-on-open-issues:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository (to make it a Git repo)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Comment on every open issue
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}   # built-in token
         run: |
           REPO="${{ github.repository }}"
-          echo "Working on repository: $REPO"
-          # List open issues
           ISSUES=$(gh issue list --state open --repo "$REPO" --json number --jq '.[].number')
           if [ -z "$ISSUES" ]; then
             echo "No open issues found."
@@ -24,5 +25,5 @@ jobs:
           fi
           for issue in $ISSUES; do
             echo "Commenting on issue #$issue"
-            gh issue comment "$issue" -b "🤖 This is a test comment from the GitHub Actions bot. (Triggered by manual workflow: ${{ github.workflow }})" --repo "$REPO"
+            gh issue comment "$issue" -b "🤖 Test comment from bot – permissions now fixed!" --repo "$REPO"
           done
