@@ -1,7 +1,8 @@
 name: Request Organization Membership
 description: Use this form to request joining our GitHub Organization
 title: "[Membership Request]: "
-labels: ["membership-request"]
+labels:
+  - membership-request
 body:
   - type: input
     id: github-username
