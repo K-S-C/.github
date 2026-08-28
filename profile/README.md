@@ -36,6 +36,8 @@ We have three distinct roles based on your involvement level:
 - [@NodeX-AR](https://github.com/NodeX-AR)
 - [@cosmosaieverywhere-hub](https://github.com/cosmosaieverywhere-hub)
 - [@notamitgamer](https://github.com/notamitgamer)
+- [@YOCRRZ224](https://github.com/YOCRRZ224)
+
 
 <!-- SUPPORTERS_LIST_END -->
 ---
@@ -43,7 +45,8 @@ We have three distinct roles based on your involvement level:
 ## 🧑‍🤝‍🧑 Current Contributors & Maintainers
 
 - [@NodeX-AR](https://github.com/NodeX-AR) – Founder / Lead Maintainer
-- [@notamitgamer](https://github.com/notamitgamer) - Contributor 
+- [@notamitgamer](https://github.com/notamitgamer) - Contributor
+- [@YOCRRZ224](https://github.com/YOCRRZ224) - Contributor
 
 
 ---
