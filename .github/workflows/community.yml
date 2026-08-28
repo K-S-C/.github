@@ -4,17 +4,30 @@ on:
   issues:
     types: [opened]
 
+# Prevent simultaneous runs for the same user/repo
+concurrency:
+  group: supporter-request-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   process-request:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'membership-request')
     steps:
-      - name: Extract username and role from issue body
+      - name: Extract username and role
         id: extract
         run: |
           BODY="${{ github.event.issue.body }}"
+          # Try to parse from the body, fallback to the issue author if empty
           USERNAME=$(echo "$BODY" | grep -oP '(?<=Your GitHub Username\s*\n\s*)\S+' | head -1)
+          if [ -z "$USERNAME" ]; then
+            USERNAME="${{ github.event.issue.user.login }}"
+            echo "⚠️ Username not found in body, using issue author: $USERNAME"
+          fi
           ROLE=$(echo "$BODY" | grep -oP '(?<=Requested Role\s*\n\s*).*' | head -1)
+          if [ -z "$ROLE" ]; then
+            ROLE="Contributor"   # default, will trigger manual review
+          fi
           echo "USERNAME=$USERNAME" >> $GITHUB_ENV
           echo "ROLE=$ROLE" >> $GITHUB_ENV
 
@@ -23,17 +36,57 @@ jobs:
           echo "USERNAME = '${{ env.USERNAME }}'"
           echo "ROLE = '${{ env.ROLE }}'"
 
-      - name: Check if Supporter
+      # Validate that the username actually exists on GitHub
+      - name: Validate GitHub username
+        id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}   # built-in token, only for read-only checks
         run: |
-          if [[ "${{ env.ROLE }}" == *"Supporter"* ]]; then
+          if gh api users/${{ env.USERNAME }} --silent 2>/dev/null; then
+            echo "VALID=true" >> $GITHUB_ENV
+          else
+            echo "VALID=false" >> $GITHUB_ENV
+            echo "::error::User ${{ env.USERNAME }} does not exist on GitHub."
+          fi
+
+      - name: Check if role contains "Supporter" (case‑insensitive)
+        id: check_role
+        run: |
+          ROLE_LOWER=$(echo "${{ env.ROLE }}" | tr '[:upper:]' '[:lower:]')
+          if [[ "$ROLE_LOWER" == *"supporter"* ]]; then
             echo "IS_SUPPORTER=true" >> $GITHUB_ENV
           else
             echo "IS_SUPPORTER=false" >> $GITHUB_ENV
           fi
 
+      # ========== HANDLE INVALID USERNAME ==========
+      - name: Comment and close if username is invalid
+        if: env.VALID == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue comment $ISSUE -b "❌ The GitHub username **${{ env.USERNAME }}** does not exist. Please check your input and reopen this issue with the correct username." --repo $REPO
+          gh issue close $ISSUE -c "Invalid username." --repo $REPO
+
       # ========== SUPPORTER PATH ==========
+      - name: Check if user is already in supporters team
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true'
+        id: check_member
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}   # PAT needed to read team membership
+          ORG: K-S-C
+          USER: ${{ env.USERNAME }}
+        run: |
+          if gh api orgs/$ORG/teams/supporters/memberships/$USER --silent 2>/dev/null; then
+            echo "ALREADY_MEMBER=true" >> $GITHUB_ENV
+          else
+            echo "ALREADY_MEMBER=false" >> $GITHUB_ENV
+          fi
+
       - name: Add user to supporters team (uses PAT)
-        if: env.IS_SUPPORTER == 'true'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ORG: K-S-C
@@ -42,18 +95,21 @@ jobs:
           gh api orgs/$ORG/teams/supporters/memberships/$USER -X PUT -f role=member
 
       - name: Checkout .github repo (uses PAT)
-        if: env.IS_SUPPORTER == 'true'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         uses: actions/checkout@v4
         with:
           repository: K-S-C/.github
           token: ${{ secrets.ORG_ADMIN_PAT }}
+          path: .github_repo   # checkout into a subdirectory to avoid conflicts
 
-      - name: Generate updated supporters list from API (uses PAT)
-        if: env.IS_SUPPORTER == 'true'
+      - name: Generate updated supporters list
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}   # PAT to list all members
           ORG: K-S-C
         run: |
+          cd .github_repo
+          mkdir -p profile
           echo "<!-- SUPPORTERS_LIST_START -->" > supporters.md
           echo "" >> supporters.md
           echo "**Current Supporters:**" >> supporters.md
@@ -65,9 +121,9 @@ jobs:
           echo "<!-- SUPPORTERS_LIST_END -->" >> supporters.md
 
       - name: Replace supporters section in profile/README.md
-        if: env.IS_SUPPORTER == 'true'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         run: |
-          mkdir -p profile
+          cd .github_repo
           if [ ! -f profile/README.md ]; then
             echo "# K Software Community" > profile/README.md
             echo "" >> profile/README.md
@@ -95,8 +151,9 @@ jobs:
           ' profile/README.md > profile/README.tmp && mv profile/README.tmp profile/README.md
 
       - name: Commit and push updated README (uses PAT)
-        if: env.IS_SUPPORTER == 'true'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         run: |
+          cd .github_repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add profile/README.md
@@ -107,23 +164,28 @@ jobs:
             git push
           fi
 
-      # 🔔 These steps use the built-in GITHUB_TOKEN → comments appear as bot
+      # 🔔 Comments and closing – use the built‑in token ONLY
       - name: Comment and close the issue (Supporter)
-        if: env.IS_SUPPORTER == 'true'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}   # built‑in token
           ISSUE: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
           USER: ${{ env.USERNAME }}
         run: |
-          gh issue comment $ISSUE -b "🎉 Congratulations @$USER! You have been automatically added as a **Supporter** and are now listed in our [community README](https://github.com/K-S-C/.github/blob/main/profile/README.md). Welcome to the K Software Community! 🚀" --repo $REPO
+          if [[ "${{ env.ALREADY_MEMBER }}" == "true" ]]; then
+            msg="ℹ️ @$USER is already a Supporter. The README was not updated (no change needed)."
+          else
+            msg="🎉 Congratulations @$USER! You have been automatically added as a **Supporter** and are now listed in our [community README](https://github.com/K-S-C/.github/blob/main/profile/README.md). Welcome to the K Software Community! 🚀"
+          fi
+          gh issue comment $ISSUE -b "$msg" --repo $REPO
           gh issue close $ISSUE -c "Auto-approved and added." --repo $REPO
 
       # ========== NON-SUPPORTER PATH ==========
       - name: Mark for manual review (Contributor / Maintainer)
-        if: env.IS_SUPPORTER == 'false'
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
         run: |
