@@ -4,7 +4,6 @@ on:
   issues:
     types: [opened]
 
-# Prevent simultaneous runs for the same user/repo
 concurrency:
   group: supporter-request-${{ github.event.issue.number }}
   cancel-in-progress: false
@@ -18,7 +17,6 @@ jobs:
         id: extract
         run: |
           BODY="${{ github.event.issue.body }}"
-          # Try to parse from the body, fallback to the issue author if empty
           USERNAME=$(echo "$BODY" | grep -oP '(?<=Your GitHub Username\s*\n\s*)\S+' | head -1)
           if [ -z "$USERNAME" ]; then
             USERNAME="${{ github.event.issue.user.login }}"
@@ -26,7 +24,7 @@ jobs:
           fi
           ROLE=$(echo "$BODY" | grep -oP '(?<=Requested Role\s*\n\s*).*' | head -1)
           if [ -z "$ROLE" ]; then
-            ROLE="Contributor"   # default, will trigger manual review
+            ROLE="Contributor"
           fi
           echo "USERNAME=$USERNAME" >> $GITHUB_ENV
           echo "ROLE=$ROLE" >> $GITHUB_ENV
@@ -36,11 +34,10 @@ jobs:
           echo "USERNAME = '${{ env.USERNAME }}'"
           echo "ROLE = '${{ env.ROLE }}'"
 
-      # Validate that the username actually exists on GitHub
       - name: Validate GitHub username
         id: validate
         env:
-          GH_TOKEN: ${{ github.token }}   # built-in token, only for read-only checks
+          GH_TOKEN: ${{ github.token }}
         run: |
           if gh api users/${{ env.USERNAME }} --silent 2>/dev/null; then
             echo "VALID=true" >> $GITHUB_ENV
@@ -49,8 +46,7 @@ jobs:
             echo "::error::User ${{ env.USERNAME }} does not exist on GitHub."
           fi
 
-      - name: Check if role contains "Supporter" (case‑insensitive)
-        id: check_role
+      - name: Check if role contains "Supporter"
         run: |
           ROLE_LOWER=$(echo "${{ env.ROLE }}" | tr '[:upper:]' '[:lower:]')
           if [[ "$ROLE_LOWER" == *"supporter"* ]]; then
@@ -59,7 +55,7 @@ jobs:
             echo "IS_SUPPORTER=false" >> $GITHUB_ENV
           fi
 
-      # ========== HANDLE INVALID USERNAME ==========
+      # ========== INVALID USERNAME ==========
       - name: Comment and close if username is invalid
         if: env.VALID == 'false'
         env:
@@ -71,11 +67,11 @@ jobs:
           gh issue close $ISSUE -c "Invalid username." --repo $REPO
 
       # ========== SUPPORTER PATH ==========
-      - name: Check if user is already in supporters team
+      - name: Check if already in supporters team
         if: env.VALID == 'true' && env.IS_SUPPORTER == 'true'
         id: check_member
         env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}   # PAT needed to read team membership
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ORG: K-S-C
           USER: ${{ env.USERNAME }}
         run: |
@@ -100,12 +96,12 @@ jobs:
         with:
           repository: K-S-C/.github
           token: ${{ secrets.ORG_ADMIN_PAT }}
-          path: .github_repo   # checkout into a subdirectory to avoid conflicts
+          path: .github_repo
 
       - name: Generate updated supporters list
         if: env.VALID == 'true' && env.IS_SUPPORTER == 'true' && env.ALREADY_MEMBER == 'false'
         env:
-          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}   # PAT to list all members
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ORG: K-S-C
         run: |
           cd .github_repo
@@ -164,11 +160,20 @@ jobs:
             git push
           fi
 
-      # 🔔 Comments and closing – use the built‑in token ONLY
+      # ========== SUPPORTER: ADD LABEL, COMMENT, CLOSE ==========
+      - name: Add 'approved' label to the issue (Supporter)
+        if: env.VALID == 'true' && env.IS_SUPPORTER == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue edit $ISSUE --add-label "approved" --repo $REPO
+
       - name: Comment and close the issue (Supporter)
         if: env.VALID == 'true' && env.IS_SUPPORTER == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}   # built‑in token
+          GH_TOKEN: ${{ github.token }}
           ISSUE: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
           USER: ${{ env.USERNAME }}
