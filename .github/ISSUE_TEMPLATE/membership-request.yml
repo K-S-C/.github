@@ -1,0 +1,33 @@
+name: Request Organization Membership
+description: Use this form to request joining our GitHub Organization
+title: "[Membership Request]: "
+labels: ["membership-request"]
+body:
+  - type: input
+    id: github-username
+    attributes:
+      label: Your GitHub Username
+      description: Please provide your GitHub username
+      placeholder: "e.g., octocat"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: membership-level
+    attributes:
+      label: Requested Role
+      description: Select the role you are applying for
+      options:
+        - Contributor (Write access, manual review required)
+        - Maintainer (Triage rights, manual review required)
+        - Supporter (Auto-approved, no permissions, just listed as member)
+    validations:
+      required: true
+
+  - type: textarea
+    id: contribution
+    attributes:
+      label: Why do you want to join?
+      description: Briefly explain your background
+    validations:
+      required: true
