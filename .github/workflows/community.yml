@@ -13,21 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'membership-request')
     steps:
-      - name: Extract username and role (robust)
+      - name: Extract username and role (Python parser)
         id: extract
         run: |
-          BODY="${{ github.event.issue.body }}"
-          USERNAME=$(echo "$BODY" | awk 'BEGIN{IGNORECASE=1} /Your GitHub Username/{getline; print}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-          if [ -z "$USERNAME" ]; then
-            USERNAME="${{ github.event.issue.user.login }}"
-            echo "⚠️ Username not found, using issue author: $USERNAME"
-          fi
-          ROLE=$(echo "$BODY" | awk 'BEGIN{IGNORECASE=1} /Requested Role/{getline; print}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-          if [ -z "$ROLE" ]; then
-            ROLE="Contributor"
-          fi
-          echo "USERNAME=$USERNAME" >> $GITHUB_ENV
-          echo "ROLE=$ROLE" >> $GITHUB_ENV
+          python3 - <<EOF
+          import re, os, sys
+          body = """${{ github.event.issue.body }}"""
+          # Extract between "Your GitHub Username" and next heading (###) or end
+          username_match = re.search(r'(?:Your GitHub Username|github-username)\s*\n\s*(.+?)(?=\n\s*###|\n\s*$)', body, re.DOTALL | re.IGNORECASE)
+          username = username_match.group(1).strip() if username_match else ""
+          role_match = re.search(r'(?:Requested Role|membership-level)\s*\n\s*(.+?)(?=\n\s*###|\n\s*$)', body, re.DOTALL | re.IGNORECASE)
+          role = role_match.group(1).strip() if role_match else ""
+          if not username:
+              username = "${{ github.event.issue.user.login }}"
+              print("⚠️ Username not found, using issue author:", username, file=sys.stderr)
+          if not role:
+              role = "Contributor"
+          # Write to GitHub env
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"USERNAME={username}\n")
+              f.write(f"ROLE={role}\n")
+          EOF
 
       - name: Debug extracted values
         run: |
