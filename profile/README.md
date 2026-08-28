@@ -43,6 +43,7 @@ We have three distinct roles based on your involvement level:
 ## 🧑‍🤝‍🧑 Current Contributors & Maintainers
 
 - [@NodeX-AR](https://github.com/NodeX-AR) – Founder / Lead Maintainer
+- - [@notamitgamer](https://github.com/notamitgamer) - Contributor 
 
 
 ---
