@@ -13,18 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     if: contains(github.event.issue.labels.*.name, 'membership-request')
     steps:
-      - name: Extract username and role
+      - name: Extract username and role (robust)
         id: extract
         run: |
           BODY="${{ github.event.issue.body }}"
-          # Get the line after "Your GitHub Username"
-          USERNAME=$(echo "$BODY" | grep -A1 "Your GitHub Username" | tail -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          USERNAME=$(echo "$BODY" | awk 'BEGIN{IGNORECASE=1} /Your GitHub Username/{getline; print}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [ -z "$USERNAME" ]; then
             USERNAME="${{ github.event.issue.user.login }}"
             echo "⚠️ Username not found, using issue author: $USERNAME"
           fi
-          # Get the line after "Requested Role"
-          ROLE=$(echo "$BODY" | grep -A1 "Requested Role" | tail -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          ROLE=$(echo "$BODY" | awk 'BEGIN{IGNORECASE=1} /Requested Role/{getline; print}' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [ -z "$ROLE" ]; then
             ROLE="Contributor"
           fi
@@ -36,7 +34,7 @@ jobs:
           echo "USERNAME = '${{ env.USERNAME }}'"
           echo "ROLE = '${{ env.ROLE }}'"
 
-      - name: Validate GitHub username (uses PAT for user scope)
+      - name: Validate GitHub username (uses PAT)
         id: validate
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
@@ -65,7 +63,7 @@ jobs:
           ISSUE: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
         run: |
-          gh issue comment $ISSUE -b "❌ The GitHub username **${{ env.USERNAME }}** does not exist. Please check your input and reopen this issue with the correct username." --repo $REPO
+          gh issue comment $ISSUE -b "❌ The GitHub username **${{ env.USERNAME }}** does not exist." --repo $REPO
           gh issue close $ISSUE -c "Invalid username." --repo $REPO
 
       # ========== SUPPORTER PATH ==========
