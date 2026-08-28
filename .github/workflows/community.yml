@@ -17,12 +17,14 @@ jobs:
         id: extract
         run: |
           BODY="${{ github.event.issue.body }}"
-          USERNAME=$(echo "$BODY" | grep -oP '(?<=Your GitHub Username\s*\n\s*)\S+' | head -1)
+          # Get the line after "Your GitHub Username"
+          USERNAME=$(echo "$BODY" | grep -A1 "Your GitHub Username" | tail -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [ -z "$USERNAME" ]; then
             USERNAME="${{ github.event.issue.user.login }}"
-            echo "⚠️ Username not found in body, using issue author: $USERNAME"
+            echo "⚠️ Username not found, using issue author: $USERNAME"
           fi
-          ROLE=$(echo "$BODY" | grep -oP '(?<=Requested Role\s*\n\s*).*' | head -1)
+          # Get the line after "Requested Role"
+          ROLE=$(echo "$BODY" | grep -A1 "Requested Role" | tail -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           if [ -z "$ROLE" ]; then
             ROLE="Contributor"
           fi
@@ -34,8 +36,7 @@ jobs:
           echo "USERNAME = '${{ env.USERNAME }}'"
           echo "ROLE = '${{ env.ROLE }}'"
 
-      # 🔧 FIXED: Use PAT for validation (needs 'user' scope)
-      - name: Validate GitHub username
+      - name: Validate GitHub username (uses PAT for user scope)
         id: validate
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
