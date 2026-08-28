@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/K-S-C/K-S-C.github.io/main/logo.png" width="30" height="30" alt="KSC Logo"> K Software Community (K-S-C)
+# <img src="https://raw.githubusercontent.com/K-S-C/K-S-C.github.io/main/k-logo.png" width="30" height="30" alt="KSC Logo"> K Software Community (K-S-C)
 
 [![Website](https://img.shields.io/badge/Website-ksc.rweb.site-blue?style=flat-square&logo=google-chrome)](https://ksc.rweb.site)
 [![Email](https://img.shields.io/badge/Email-admin@a--r.is--a.dev-red?style=flat-square&logo=gmail)](mailto:admin@a-r.is-a.dev)
