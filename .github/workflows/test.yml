@@ -1,7 +1,7 @@
 name: Test Bot Comment on All Open Issues
 
 on:
-  workflow_dispatch:  # manual trigger from the Actions tab
+  workflow_dispatch:
 
 jobs:
   comment-on-open-issues:
@@ -9,15 +9,15 @@ jobs:
     steps:
       - name: Comment on every open issue
         env:
-          GH_TOKEN: ${{ github.token }}   # explicitly use the built-in token
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          # Fetch all open issue numbers
-          ISSUES=$(gh issue list --state open --json number --jq '.[].number')
+          ISSUES=$(gh issue list --state open --repo "$REPO" --json number --jq '.[].number')
           if [ -z "$ISSUES" ]; then
             echo "No open issues found."
             exit 0
           fi
           for issue in $ISSUES; do
             echo "Commenting on issue #$issue"
-            gh issue comment $issue -b "🤖 This is a test comment from the GitHub Actions bot. (Triggered by manual workflow: ${{ github.workflow }})"
+            gh issue comment "$issue" -b "🤖 This is a test comment from the GitHub Actions bot. (Triggered by manual workflow: ${{ github.workflow }})" --repo "$REPO"
           done
