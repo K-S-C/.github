@@ -1,0 +1,32 @@
+name: Update Supporters List
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: K-S-C/.github
+      - name: Fetch Supporters and update README
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          ORG: K-S-C
+        run: |
+          echo "## Supporters" > temp_supporters.md
+          gh api orgs/$ORG/teams/supporters/members --paginate --jq '.[].login' | while read user; do
+            echo "- [@$user](https://github.com/$user)" >> temp_supporters.md
+          done
+          
+          # Replace the Supporters section in profile/README.md
+          sed -i '/## Supporters/,/##/c\cat temp_supporters.md' profile/README.md || cat temp_supporters.md >> profile/README.md
+          
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add profile/README.md
+          git commit -m "Update supporters list" || echo "No changes"
+          git push
