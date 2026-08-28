@@ -2,8 +2,8 @@ name: Update Supporters List
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Daily
-  workflow_dispatch:
+    - cron: '0 0 * * *'   # runs daily at midnight UTC
+  workflow_dispatch:      # allows manual trigger
 
 jobs:
   update-readme:
@@ -12,21 +12,71 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: K-S-C/.github
-      - name: Fetch Supporters and update README
+          token: ${{ secrets.ORG_ADMIN_PAT }}  # needed to push changes
+
+      - name: Fetch Supporters and generate list
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ORG: K-S-C
         run: |
-          echo "## Supporters" > temp_supporters.md
+          # Build the new supporters list as markdown
+          echo "<!-- SUPPORTERS_LIST_START -->" > supporters.md
+          echo "" >> supporters.md
+          echo "**Current Supporters:**" >> supporters.md
+          echo "" >> supporters.md
+          
+          # Fetch all members of the 'supporters' team
           gh api orgs/$ORG/teams/supporters/members --paginate --jq '.[].login' | while read user; do
-            echo "- [@$user](https://github.com/$user)" >> temp_supporters.md
+            echo "- [@$user](https://github.com/$user)" >> supporters.md
           done
           
-          # Replace the Supporters section in profile/README.md
-          sed -i '/## Supporters/,/##/c\cat temp_supporters.md' profile/README.md || cat temp_supporters.md >> profile/README.md
+          echo "" >> supporters.md
+          echo "<!-- SUPPORTERS_LIST_END -->" >> supporters.md
+
+      - name: Replace supporters section in README
+        run: |
+          # Ensure profile/README.md exists
+          if [ ! -f profile/README.md ]; then
+            echo "profile/README.md not found. Creating one."
+            mkdir -p profile
+            echo "# K Software Community" > profile/README.md
+            echo "" >> profile/README.md
+            echo "<!-- SUPPORTERS_LIST_START -->" >> profile/README.md
+            echo "<!-- SUPPORTERS_LIST_END -->" >> profile/README.md
+          fi
           
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          # Use awk to replace the block between the markers
+          awk '
+            BEGIN { in_block = 0; printed = 0 }
+            /<!-- SUPPORTERS_LIST_START -->/ {
+              in_block = 1;
+              print;
+              # Insert the new content from supporters.md
+              while ((getline line < "supporters.md") > 0) {
+                if (line ~ /<!-- SUPPORTERS_LIST_START -->/ || line ~ /<!-- SUPPORTERS_LIST_END -->/) continue;
+                print line;
+              }
+              printed = 1;
+              next;
+            }
+            /<!-- SUPPORTERS_LIST_END -->/ {
+              in_block = 0;
+              print;
+              next;
+            }
+            !in_block { print }
+            END { if (!printed) print "<!-- SUPPORTERS_LIST_START -->\n<!-- SUPPORTERS_LIST_END -->" >> "profile/README.md" }
+          ' profile/README.md > profile/README.tmp && mv profile/README.tmp profile/README.md
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add profile/README.md
-          git commit -m "Update supporters list" || echo "No changes"
-          git push
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "docs: update supporters list [skip ci]"
+            git push
+          fi
