@@ -64,7 +64,6 @@ jobs:
       - name: Replace supporters section in profile/README.md
         if: env.IS_SUPPORTER == 'true'
         run: |
-          # Ensure profile/README.md exists
           mkdir -p profile
           if [ ! -f profile/README.md ]; then
             echo "# K Software Community" > profile/README.md
@@ -73,7 +72,6 @@ jobs:
             echo "<!-- SUPPORTERS_LIST_END -->" >> profile/README.md
           fi
 
-          # Use awk to replace the block between markers with the new list (excluding markers)
           awk '
             BEGIN { in_block = 0; printed = 0 }
             /<!-- SUPPORTERS_LIST_START -->/ {
@@ -112,10 +110,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
           USER: ${{ env.USERNAME }}
         run: |
-          gh issue comment $ISSUE -b "🎉 Congratulations @$USER! You have been automatically added as a **Supporter** and are now listed in our [community README](https://github.com/K-S-C/.github/blob/main/profile/README.md). Welcome to the K Software Community! "
-          gh issue close $ISSUE -c "Auto-approved and added."
+          gh issue comment $ISSUE -b "🎉 Congratulations @$USER! You have been automatically added as a **Supporter** and are now listed in our [community README](https://github.com/K-S-C/.github/blob/main/profile/README.md). Welcome to the K Software Community!" --repo $REPO
+          gh issue close $ISSUE -c "Auto-approved and added." --repo $REPO
 
       # ========== NON-SUPPORTER PATH ==========
       - name: Mark for manual review (Contributor / Maintainer)
@@ -123,6 +122,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
           ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
         run: |
-          gh issue edit $ISSUE --add-label "needs-manual-review"
-          gh issue comment $ISSUE -b "Thank you for your request. A maintainer will manually review your application and add you to the appropriate team. Please be patient."
+          gh issue edit $ISSUE --add-label "needs-manual-review" --repo $REPO
+          gh issue comment $ISSUE -b "Thank you for your request. A maintainer will manually review your application and add you to the appropriate team. Please be patient." --repo $REPO
