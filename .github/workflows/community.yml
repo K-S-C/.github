@@ -1,0 +1,128 @@
+name: Auto-add Supporter & Update README
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  process-request:
+    runs-on: ubuntu-latest
+    # Only run if the issue has the "membership-request" label
+    if: contains(github.event.issue.labels.*.name, 'membership-request')
+    steps:
+      - name: Extract username and role from issue body
+        id: extract
+        run: |
+          BODY="${{ github.event.issue.body }}"
+          USERNAME=$(echo "$BODY" | grep -oP '(?<=Your GitHub Username\s*\n\s*)\S+' | head -1)
+          ROLE=$(echo "$BODY" | grep -oP '(?<=Requested Role\s*\n\s*).*' | head -1)
+          echo "USERNAME=$USERNAME" >> $GITHUB_ENV
+          echo "ROLE=$ROLE" >> $GITHUB_ENV
+
+      - name: Check if Supporter
+        id: check
+        run: |
+          if [[ "${{ env.ROLE }}" == *"Supporter"* ]]; then
+            echo "IS_SUPPORTER=true" >> $GITHUB_ENV
+          else
+            echo "IS_SUPPORTER=false" >> $GITHUB_ENV
+          fi
+
+      # ========== SUPPORTER PATH ==========
+      - name: Add user to supporters team
+        if: env.IS_SUPPORTER == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          ORG: K-S-C
+          USER: ${{ env.USERNAME }}
+        run: |
+          gh api orgs/$ORG/teams/supporters/memberships/$USER -X PUT -f role=member
+
+      - name: Checkout .github repo
+        if: env.IS_SUPPORTER == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: K-S-C/.github
+          token: ${{ secrets.ORG_ADMIN_PAT }}
+
+      - name: Generate updated supporters list from API
+        if: env.IS_SUPPORTER == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          ORG: K-S-C
+        run: |
+          echo "<!-- SUPPORTERS_LIST_START -->" > supporters.md
+          echo "" >> supporters.md
+          echo "**Current Supporters:**" >> supporters.md
+          echo "" >> supporters.md
+          gh api orgs/$ORG/teams/supporters/members --paginate --jq '.[].login' | while read user; do
+            echo "- [@$user](https://github.com/$user)" >> supporters.md
+          done
+          echo "" >> supporters.md
+          echo "<!-- SUPPORTERS_LIST_END -->" >> supporters.md
+
+      - name: Replace supporters section in profile/README.md
+        if: env.IS_SUPPORTER == 'true'
+        run: |
+          # Ensure profile/README.md exists
+          mkdir -p profile
+          if [ ! -f profile/README.md ]; then
+            echo "# K Software Community" > profile/README.md
+            echo "" >> profile/README.md
+            echo "<!-- SUPPORTERS_LIST_START -->" >> profile/README.md
+            echo "<!-- SUPPORTERS_LIST_END -->" >> profile/README.md
+          fi
+
+          # Use awk to replace the block between markers with the new list (excluding markers)
+          awk '
+            BEGIN { in_block = 0; printed = 0 }
+            /<!-- SUPPORTERS_LIST_START -->/ {
+              in_block = 1;
+              print;
+              while ((getline line < "supporters.md") > 0) {
+                if (line ~ /<!-- SUPPORTERS_LIST_START -->/ || line ~ /<!-- SUPPORTERS_LIST_END -->/) continue;
+                print line;
+              }
+              printed = 1;
+              next;
+            }
+            /<!-- SUPPORTERS_LIST_END -->/ {
+              in_block = 0;
+              print;
+              next;
+            }
+            !in_block { print }
+          ' profile/README.md > profile/README.tmp && mv profile/README.tmp profile/README.md
+
+      - name: Commit and push updated README
+        if: env.IS_SUPPORTER == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add profile/README.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "docs: add supporter ${{ env.USERNAME }} [skip ci]"
+            git push
+          fi
+
+      - name: Comment and close the issue (Supporter)
+        if: env.IS_SUPPORTER == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          ISSUE: ${{ github.event.issue.number }}
+          USER: ${{ env.USERNAME }}
+        run: |
+          gh issue comment $ISSUE -b "🎉 Congratulations @$USER! You have been automatically added as a **Supporter** and are now listed in our [community README](https://github.com/K-S-C/.github/blob/main/profile/README.md). Welcome to the K Software Community! "
+          gh issue close $ISSUE -c "Auto-approved and added."
+
+      # ========== NON-SUPPORTER PATH ==========
+      - name: Mark for manual review (Contributor / Maintainer)
+        if: env.IS_SUPPORTER == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.ORG_ADMIN_PAT }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          gh issue edit $ISSUE --add-label "needs-manual-review"
+          gh issue comment $ISSUE -b "Thank you for your request. A maintainer will manually review your application and add you to the appropriate team. Please be patient."
