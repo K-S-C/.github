@@ -26,15 +26,6 @@ We have three distinct roles based on your involvement level:
 
 ---
 
-## 📂 Our Core Repositories
-
-| Repository | Description |
-| :--- | :--- |
-| **[K](https://github.com/K-S-C/K)** | The core implementation of the K programming language (written in Python). |
-| **[K-S-C.github.io](https://github.com/K-S-C/K-S-C.github.io)** | Our official community website source code. |
-| **[.github](https://github.com/K-S-C/.github)** | Organization-wide issue templates, workflows, and this very README. |
-
----
 
 ## 🌟 Our Supporters
 
