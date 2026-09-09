@@ -37,6 +37,7 @@ We have three distinct roles based on your involvement level:
 - [@NodeX-AR](https://github.com/NodeX-AR)
 - [@notamitgamer](https://github.com/notamitgamer)
 - [@cosmosaieverywhere-hub](https://github.com/cosmosaieverywhere-hub)
+- [@santhosh-01-logic](https://github.com/santhosh-01-logic)
 
 <!-- SUPPORTERS_LIST_END -->
 ---
