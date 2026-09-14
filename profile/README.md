@@ -1,16 +1,27 @@
-# <img src="https://raw.githubusercontent.com/K-S-C/K-S-C.github.io/main/k-logo.png" width="30" height="30" alt="KSC Logo"> K Software Community 
+# <img src="https://raw.githubusercontent.com/K-S-C/K-S-C.github.io/main/k-logo.png" width="30" height="30" alt="KSC Logo"> KS Community 
 
 [![Website](https://img.shields.io/badge/Website-ksc.rweb.site-blue?style=flat-square&logo=google-chrome)](https://ksc.rweb.site)
 [![Email](https://img.shields.io/badge/Email-admin@a--r.is--a.dev-red?style=flat-square&logo=gmail)](mailto:admin@a-r.is-a.dev)
 [![GitHub followers](https://img.shields.io/github/followers/K-S-C?label=Follow&style=social)](https://github.com/K-S-C)
 
-Welcome to the official GitHub organization for the **K Software Community**!
+Welcome to the official GitHub organization for the **KS Community**!
 
-We are the community behind the **K programming language** – a powerful, expressive, and high-performance language designed for simplicity and speed. Our mission is to build a friendly ecosystem where developers, learners, and enthusiasts collaborate to push the boundaries of what K can do.
+We are the community behind the **KS programming language** – a powerful, expressive, and high-performance language designed for simplicity and speed. Our mission is to build a friendly ecosystem where developers, learners, and enthusiasts collaborate to push the boundaries of what K can do.
+
+---
+## How to use ?
+
+Check out our website : [KS Community](https://ksc.rweb.site/)
+
+---
+## Want to be our supportor?
+
+Click here to be one !
+[Welcome Supporter](https://github.com/K-S-C/.github/issues/new/choose)
 
 ---
 
-## 🚀 How to Join Us
+## How to Join Us
 
 We are open to everyone! To become an official member of the organization, simply **[open a membership request issue](https://github.com/K-S-C/.github/issues/new/choose)** and fill out the form.
 
@@ -18,31 +29,15 @@ We have three distinct roles based on your involvement level:
 
 | Role | Permissions | Review Process |
 | :--- | :--- | :--- |
-| **🧑‍💻 Maintainers** | Triage rights (can add/manage labels on issues & PRs across all repos). **No merge/push power**. | **Manual review** by admins. |
-| **✍️ Contributors** | Write access to repositories. Listed publicly in this README. | **Manual review** by admins. |
-| **🎉 Supporters** | No repository permissions. Just recognized as community members. | **Auto-approved & added** instantly via GitHub Actions! |
+| **Maintainers** | Triage rights (can add/manage labels on issues & PRs across all repos). **No merge/push power**. | **Manual review** by admins. |
+| **Contributors** | Write access to repositories. Listed publicly in this README. | **Manual review** by admins. |
+| **Supporters** | No repository permissions. Just recognized as community members. | **Auto-approved & added** instantly via GitHub Actions! |
 
-> **💡 Tip:** If you're just getting started, apply as a **Supporter** to show your support and get added immediately. If you have code contributions ready, go for **Contributor** or **Maintainer**!
+> **Tip:** If you're just getting started, apply as a **Supporter** to show your support and get added immediately. If you have code contributions ready, go for **Contributor** or **Maintainer**!
 
 ---
 
-
-## 🌟 Our Supporters
-
-<!-- SUPPORTERS_LIST_START -->
-
-**Current Supporters:**
-
-- [@YOCRRZ224](https://github.com/YOCRRZ224)
-- [@NodeX-AR](https://github.com/NodeX-AR)
-- [@notamitgamer](https://github.com/notamitgamer)
-- [@cosmosaieverywhere-hub](https://github.com/cosmosaieverywhere-hub)
-- [@santhosh-01-logic](https://github.com/santhosh-01-logic)
-
-<!-- SUPPORTERS_LIST_END -->
----
-
-## 🧑‍🤝‍🧑 Current Contributors & Maintainers
+## Current Contributors & Maintainers
 
 - [@NodeX-AR](https://github.com/NodeX-AR) – Founder / Lead Maintainer
 - [@notamitgamer](https://github.com/notamitgamer) - Contributor
@@ -51,7 +46,7 @@ We have three distinct roles based on your involvement level:
 
 ---
 
-## 📧 Contact & Community
+## Contact & Community
 
 - **Website**: [https://ksc.rweb.site](https://ksc.rweb.site)
 - **Email**: [admin@a-r.is-a.dev](mailto:admin@a-r.is-a.dev)
@@ -59,7 +54,7 @@ We have three distinct roles based on your involvement level:
 
 ---
 
-## 🤝 Contributing Guidelines
+## Contributing Guidelines
 
 1. Fork the repository you want to work on.
 2. Create a feature branch.
@@ -69,5 +64,12 @@ We have three distinct roles based on your involvement level:
 If you need label permissions or direct write access, apply for the **Maintainer** or **Contributor** roles using our issue form!
 
 ---
+<!-- SUPPORTERS_LIST_START -->
 
-*Built with ❤️ by the K programming language community.*
+# Current Supporters:
+
+- [@YOCRRZ224](https://github.com/YOCRRZ224)
+- [@NodeX-AR](https://github.com/NodeX-AR)
+- [@notamitgamer](https://github.com/notamitgamer)
+- [@cosmosaieverywhere-hub](https://github.com/cosmosaieverywhere-hub)
+- [@santhosh-01-logic](https://github.com/santhosh-01-logic)
